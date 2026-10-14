@@ -5,6 +5,8 @@ Elle permet d'ajouter, consulter, modifier et supprimer des séries, avec des fi
 
 Projet réalisé dans le cadre de mon Bachelor à l'ESGI pour m'entraîner à la conception d'API.
 
+> **Note :** je republie ce projet dans une nouvelle version. Les fichiers d'origine ont été perdus ou étaient devenus obsolètes, je l'ai donc repris et mis à jour.
+
 ## Technologies
 
 - Python 3.10+
