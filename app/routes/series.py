@@ -1,10 +1,10 @@
-from typing import List
+from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app import crud
 from app.database import get_db
-from app.schemas import Serie, SerieCreate, SerieUpdate
+from app.schemas import Serie, SerieCreate, SerieUpdate, Statut
 
 router = APIRouter(prefix="/series", tags=["Séries"])
 
@@ -16,9 +16,27 @@ def serie_ou_404(conn, serie_id):
     return serie
 
 
-@router.get("", response_model=List[Serie], summary="Lister les séries")
-def lister_series(conn=Depends(get_db)):
-    return crud.lister_series(conn)
+@router.get("", response_model=List[Serie], summary="Lister et filtrer les séries")
+def lister_series(
+    response: Response,
+    titre: Optional[str] = Query(None, description="Recherche dans le titre (partielle, sans tenir compte des majuscules)"),
+    genre: Optional[str] = Query(None, description="Genre exact, par exemple Drame"),
+    statut: Optional[Statut] = Query(None),
+    annee_min: Optional[int] = Query(None, ge=1900, description="Sorties à partir de cette année"),
+    annee_max: Optional[int] = Query(None, le=2100, description="Sorties jusqu'à cette année"),
+    tri: Literal["titre", "annee", "id"] = "titre",
+    ordre: Literal["asc", "desc"] = "asc",
+    limit: int = Query(20, ge=1, le=100, description="Nombre de résultats par page"),
+    offset: int = Query(0, ge=0, description="Nombre de résultats à sauter"),
+    conn=Depends(get_db),
+):
+    series, total = crud.lister_series(
+        conn, titre, genre, statut.value if statut else None,
+        annee_min, annee_max, tri, ordre, limit, offset,
+    )
+    # Le nombre total de résultats est renvoyé dans un en-tête pour la pagination
+    response.headers["X-Total-Count"] = str(total)
+    return series
 
 
 @router.get("/{serie_id}", response_model=Serie, summary="Détail d'une série")

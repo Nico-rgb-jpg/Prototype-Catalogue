@@ -9,8 +9,43 @@ def ligne_vers_dict(ligne):
     return dict(ligne) if ligne else None
 
 
-def lister_series(conn):
-    lignes = conn.execute("SELECT * FROM series ORDER BY titre").fetchall()
+def lister_series(conn, titre=None, genre=None, statut=None, annee_min=None, annee_max=None,
+                  tri="titre", ordre="asc", limit=20, offset=0):
+    """Renvoie (liste des séries de la page, nombre total de résultats)."""
+    conditions = []
+    params = []
+
+    if titre:
+        conditions.append("LOWER(titre) LIKE LOWER(?)")
+        params.append(f"%{titre}%")
+    if genre:
+        conditions.append("LOWER(genre) = LOWER(?)")
+        params.append(genre)
+    if statut:
+        conditions.append("statut = ?")
+        params.append(statut)
+    if annee_min is not None:
+        conditions.append("annee >= ?")
+        params.append(annee_min)
+    if annee_max is not None:
+        conditions.append("annee <= ?")
+        params.append(annee_max)
+
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+
+    total = conn.execute("SELECT COUNT(*) FROM series" + where, params).fetchone()[0]
+
+    # tri et ordre sont vérifiés dans la route (valeurs autorisées seulement),
+    # on peut donc les mettre dans la requête sans risque d'injection
+    sql = f"SELECT * FROM series{where} ORDER BY {tri} {ordre}, id LIMIT ? OFFSET ?"
+    lignes = conn.execute(sql, params + [limit, offset]).fetchall()
+    return [dict(l) for l in lignes], total
+
+
+def lister_genres(conn):
+    lignes = conn.execute(
+        "SELECT genre, COUNT(*) AS nombre FROM series GROUP BY genre ORDER BY genre"
+    ).fetchall()
     return [dict(l) for l in lignes]
 
 

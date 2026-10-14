@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.database import init_db
-from app.routes import series
+from app.routes import genres, series
 
 
 @asynccontextmanager
@@ -21,6 +21,7 @@ app = FastAPI(
 )
 
 app.include_router(series.router)
+app.include_router(genres.router)
 
 
 @app.get("/", tags=["Accueil"])
